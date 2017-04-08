@@ -14,7 +14,7 @@ end
 
 if not set -q __fish_optware_binsearch_depth
    set -x __fish_optware_binsearch_depth   3
-end-
+end
 
 if [ ! -d $__fish_optware_cache_dir ]
     mkdir -p $__fish_optware_cache_dir
