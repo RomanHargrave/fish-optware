@@ -1,3 +1,4 @@
+# vim: set ts=4 sw=4 :
 # Search path, modifiable by setting before snippet is loaded
 if not set -q __fish_optware_search_dirs 
     set -x __fish_optware_search_dirs $LFIX/opt /opt
@@ -5,11 +6,13 @@ end
 
 # Cache location
 set -x __fish_optware_cache_dir         $HOME/.cache/fish-optware-repo
+set -x __fish_optware_cache_bin         $__fish_optware_cache_dir/bin
 set -x __fish_optware_path_file         $__fish_optware_cache_dir/path
 set -x __fish_optware_override_name     .optware_path
+set -x __fish_optware_exports_name      .optware_export
 
 if not set -q __fish_optware_common_bindirs
-   set -x __fish_optware_common_bindirs    bin bin64 
+   set -x __fish_optware_common_bindirs bin bin64
 end
 
 if not set -q __fish_optware_binsearch_depth
@@ -21,7 +24,7 @@ if [ ! -d $__fish_optware_cache_dir ]
 end
 
 # Helpers
-function __fish_optware.conf.path_insert 
+function __fish_optware.conf.path_insert
     for spec in $argv
         if not contains $spec $PATH
             set -gx PATH $PATH $spec
@@ -64,10 +67,10 @@ function __fish_optware.build_cache
     end
 end
 
-# Load cache from file 
+# Load cache from file
 function __fish_optware.load_cache
     if [ -f $__fish_optware_path_file ]
-        __fish_optware.conf.path_insert (cat $__fish_optware_path_file)
+        __fish_optware.conf.path_insert $__fish_optware_cache_bin
     else
         # Say something?
         return 1
@@ -77,6 +80,38 @@ end
 # Write cache to file
 function __fish_optware.save_cache
     __fish_optware.build_cache > $__fish_optware_path_file
+end
+
+# Generate the link directory
+function __fish_optware.generate_linkdir
+    # create staging dir for new symlink repo
+    set -l stg_dir "$__fish_optware_cache_bin.stg"
+    set -l old_dir "$__fish_optware_cache_bin.old"
+
+    mkdir -p $stg_dir
+
+    for bin_dir in (cat $__fish_optware_path_file)
+        if [ -e "$bin_dir/$__fish_optware_exports_name" ]
+            # process manually specified executable names
+            for ex in (cat "$bin_dir/$__fish_optware_exports_name")
+                if [ -x "$bin_dir/$ex" ]
+                    ln -s "$bin_dir/$ex" $stg_dir/
+                else
+                    set_color red
+                    echo "optware dir $bin_dir export $ex is not executable. skipping...."
+                    set_color normal
+                end
+            end
+        else
+            # process automatically discovered executables
+            find $bin_dir -maxdepth 1 -type f -executable -not -iname '*.so' -exec ln -s '{}' $stg_dir/ ';'
+        end
+    end
+
+    test -e $old_dir; and rm -r $old_dir
+    test -e $__fish_optware_cache_bin; and mv $__fish_optware_cache_bin $old_dir
+
+    mv $stg_dir $__fish_optware_cache_bin
 end
 
 # User command
@@ -89,7 +124,7 @@ function optware -d 'fish optware helper'
 
     switch $directive
         case rebuild
-            if __fish_optware.save_cache
+            if __fish_optware.save_cache and __fish_optware.generate_linkdir
                 set_color green
                 echo "Cache built"
             else
