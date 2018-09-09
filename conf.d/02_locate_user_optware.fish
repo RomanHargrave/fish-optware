@@ -95,7 +95,11 @@ function __fish_optware.generate_linkdir
             # process manually specified executable names
             for ex in (cat "$bin_dir/$__fish_optware_exports_name")
                 if [ -x "$bin_dir/$ex" ]
-                    ln -s "$bin_dir/$ex" $stg_dir/
+                    if not ln -s "$bin_dir/$ex" $stg_dir/
+                        set_color red
+                        echo "- while exporting $ex from $bin_dir"
+                        set_color normal
+                    end
                 else
                     set_color red
                     echo "optware dir $bin_dir export $ex is not executable. skipping...."
@@ -104,7 +108,13 @@ function __fish_optware.generate_linkdir
             end
         else
             # process automatically discovered executables
-            find $bin_dir -maxdepth 1 -type f -executable -not -iname '*.so' -exec ln -s '{}' $stg_dir/ ';'
+            for exe in (find $bin_dir -maxdepth 1 -type f -executable -not -iname '*.so')
+                if not ln -s $exe $stg_dir/
+                    set_color red
+                    echo "- while exporting discovered executables from $bin_dir"
+                    set_color normal
+                end
+            end
         end
     end
 
