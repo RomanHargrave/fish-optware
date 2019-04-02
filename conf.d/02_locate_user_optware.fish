@@ -134,7 +134,7 @@ function optware -d 'fish optware helper'
 
     switch $directive
         case rebuild
-            if __fish_optware.save_cache and __fish_optware.generate_linkdir
+            if __fish_optware.save_cache; and __fish_optware.generate_linkdir
                 set_color green
                 echo "Cache built"
             else
