@@ -36,7 +36,7 @@ end
 # All output via stdout
 
 # Precompile findargs for build_path_for_dir
-set __fish_optware__build_path_for_dir__findargs -mindepth 1 -maxdepth $__fish_optware_binsearch_depth -type d (string split ' ' -- (echo '-name '$__fish_optware_common_bindirs' -not -empty -or' | grep -Po '2>.*(?= -or)'))
+set __fish_optware__build_path_for_dir__findargs -mindepth 1 -maxdepth $__fish_optware_binsearch_depth -type d (string split ' ' -- (echo '-name '$__fish_optware_common_bindirs' -not -empty -or' | grep -Po '^.*(?= -or)'))
 function __fish_optware.build_path_for_dir -a dir 
     # If a custom path config for this dir exists, 
     if [ -f "$dir/$__fish_optware_override_name" ]
